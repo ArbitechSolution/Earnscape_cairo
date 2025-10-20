@@ -1,0 +1,19 @@
+[package]
+name = "earnscape_contracts"
+version = "0.1.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "2.8.2"
+
+[dependencies.openzeppelin]
+git = "https://github.com/OpenZeppelin/cairo-contracts.git"
+tag = "v0.20.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+# Note: removed the [scripts] section because defining scripts that call `scarb`
+# from within the manifest can cause recursive invocations. Use external shell
+# scripts or task runners for convenience commands instead.
