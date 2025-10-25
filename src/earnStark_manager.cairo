@@ -3,14 +3,13 @@
 
 #[starknet::contract]
 mod EarnSTARKManager {
-    use starknet::ContractAddress;
-    use starknet::get_contract_address;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_contract_address};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-    
+
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -22,14 +21,15 @@ mod EarnSTARKManager {
     }
 
     // ETH token contract address on Starknet
-    const ETH_TOKEN_ADDRESS: felt252 = 0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d;
+    const ETH_TOKEN_ADDRESS: felt252 =
+        0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         earns: ContractAddress,
-        vesting: ContractAddress,  // Individual Vesting contract, NOT bulk vesting
+        vesting: ContractAddress // Individual Vesting contract, NOT bulk vesting
     }
 
     #[event]
@@ -68,8 +68,8 @@ mod EarnSTARKManager {
             // Note: Starknet uses ETH as native token, not XDC
             // Native ETH transfers require a different approach in Cairo
             // This would typically use the ETH token contract on Starknet
-            let eth_token = IERC20Dispatcher { 
-                contract_address: ETH_TOKEN_ADDRESS.try_into().unwrap()
+            let eth_token = IERC20Dispatcher {
+                contract_address: ETH_TOKEN_ADDRESS.try_into().unwrap(),
             };
             let balance = eth_token.balance_of(get_contract_address());
             assert(balance >= amount, 'Insufficient ETH balance');
@@ -85,28 +85,26 @@ mod EarnSTARKManager {
 
         // Read current ETH balance
         fn get_eth_balance(self: @ContractState) -> u256 {
-            let eth_token = IERC20Dispatcher { 
-                contract_address: ETH_TOKEN_ADDRESS.try_into().unwrap()
+            let eth_token = IERC20Dispatcher {
+                contract_address: ETH_TOKEN_ADDRESS.try_into().unwrap(),
             };
             eth_token.balance_of(get_contract_address())
         }
 
         // Deposit EARNS to vesting contract
         fn earn_deposit_to_vesting(
-            ref self: ContractState,
-            receiver: ContractAddress,
-            amount: u256
+            ref self: ContractState, receiver: ContractAddress, amount: u256,
         ) {
             self.ownable.assert_only_owner();
             let earns_addr = self.earns.read();
             let vesting_addr = self.vesting.read();
-            
+
             // Transfer EARNS to vesting contract
             let earns_token = IERC20Dispatcher { contract_address: earns_addr };
             let balance = earns_token.balance_of(get_contract_address());
             assert(balance >= amount, 'Insufficient earns balance');
             earns_token.transfer(vesting_addr, amount);
-            
+
             // Call vesting contract's depositEarn function
             let vesting = IEarnscapeVestingDispatcher { contract_address: vesting_addr };
             vesting.deposit_earn(receiver, amount);
@@ -128,9 +126,7 @@ trait IEarnSTARKManager<TContractState> {
     fn get_earns_balance(self: @TContractState) -> u256;
     fn get_eth_balance(self: @TContractState) -> u256;
     fn earn_deposit_to_vesting(
-        ref self: TContractState,
-        receiver: starknet::ContractAddress,
-        amount: u256
+        ref self: TContractState, receiver: starknet::ContractAddress, amount: u256,
     );
     fn set_vesting_address(ref self: TContractState, vesting: starknet::ContractAddress);
 }

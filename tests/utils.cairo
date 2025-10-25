@@ -1,10 +1,10 @@
 use core::traits::{Into, TryInto};
-use starknet::ContractAddress;
-use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-    stop_cheat_caller_address, start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global
-};
 use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global,
+    start_cheat_caller_address, stop_cheat_block_timestamp_global, stop_cheat_caller_address,
+};
+use starknet::ContractAddress;
 
 // ============================================================================
 // Constants - Addresses
@@ -97,18 +97,14 @@ pub fn setup_stearn_token() -> ContractAddress {
 // Setup Functions - Core Contracts
 // ============================================================================
 
-pub fn setup_escrow(
-    earns_token: ContractAddress, treasury: ContractAddress
-) -> ContractAddress {
+pub fn setup_escrow(earns_token: ContractAddress, treasury: ContractAddress) -> ContractAddress {
     let contract = declare("Escrow").unwrap().contract_class();
     let constructor_args = array![OWNER().into(), earns_token.into(), treasury.into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     contract_address
 }
 
-pub fn setup_earnstark_manager(
-    earns_token: ContractAddress
-) -> ContractAddress {
+pub fn setup_earnstark_manager(earns_token: ContractAddress) -> ContractAddress {
     let contract = declare("EarnSTARKManager").unwrap().contract_class();
     let constructor_args = array![OWNER().into(), earns_token.into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
@@ -116,16 +112,11 @@ pub fn setup_earnstark_manager(
 }
 
 pub fn setup_staking(
-    earn_token: ContractAddress, 
-    stearn_token: ContractAddress, 
-    manager: ContractAddress
+    earn_token: ContractAddress, stearn_token: ContractAddress, manager: ContractAddress,
 ) -> ContractAddress {
     let contract = declare("EarnscapeStaking").unwrap().contract_class();
     let constructor_args = array![
-        OWNER().into(), 
-        earn_token.into(), 
-        stearn_token.into(), 
-        manager.into()
+        OWNER().into(), earn_token.into(), stearn_token.into(), manager.into(),
     ];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     contract_address
@@ -135,32 +126,21 @@ pub fn setup_vesting(
     earn_token: ContractAddress,
     stearn_token: ContractAddress,
     manager: ContractAddress,
-    staking: ContractAddress
+    staking: ContractAddress,
 ) -> ContractAddress {
     let contract = declare("Vesting").unwrap().contract_class();
     let constructor_args = array![
-        earn_token.into(),
-        stearn_token.into(),
-        manager.into(),
-        staking.into(),
-        OWNER().into()
+        earn_token.into(), stearn_token.into(), manager.into(), staking.into(), OWNER().into(),
     ];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     contract_address
 }
 
 pub fn setup_bulk_vesting(
-    manager: ContractAddress,
-    escrow: ContractAddress,
-    token: ContractAddress
+    manager: ContractAddress, escrow: ContractAddress, token: ContractAddress,
 ) -> ContractAddress {
     let contract = declare("EarnscapeBulkVesting").unwrap().contract_class();
-    let constructor_args = array![
-        manager.into(), 
-        escrow.into(), 
-        token.into(), 
-        OWNER().into()
-    ];
+    let constructor_args = array![manager.into(), escrow.into(), token.into(), OWNER().into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     contract_address
 }
@@ -170,33 +150,33 @@ pub fn setup_bulk_vesting(
 // ============================================================================
 
 pub fn setup_complete_system() -> (
-    ContractAddress,  // earn_token
-    ContractAddress,  // stearn_token
-    ContractAddress,  // escrow
-    ContractAddress,  // manager
-    ContractAddress,  // staking
-    ContractAddress,  // vesting
-    ContractAddress   // bulk_vesting
+    ContractAddress, // earn_token
+    ContractAddress, // stearn_token
+    ContractAddress, // escrow
+    ContractAddress, // manager
+    ContractAddress, // staking
+    ContractAddress, // vesting
+    ContractAddress // bulk_vesting
 ) {
     // Deploy tokens
     let (earn_token, _) = setup_earn_token();
     let stearn_token = setup_stearn_token();
-    
+
     // Deploy escrow
     let escrow = setup_escrow(earn_token, TREASURY());
-    
+
     // Deploy manager
     let manager = setup_earnstark_manager(earn_token);
-    
+
     // Deploy staking
     let staking = setup_staking(earn_token, stearn_token, manager);
-    
+
     // Deploy vesting
     let vesting = setup_vesting(earn_token, stearn_token, manager, staking);
-    
+
     // Deploy bulk vesting
     let bulk_vesting = setup_bulk_vesting(manager, escrow, earn_token);
-    
+
     (earn_token, stearn_token, escrow, manager, staking, vesting, bulk_vesting)
 }
 
@@ -205,10 +185,7 @@ pub fn setup_complete_system() -> (
 // ============================================================================
 
 pub fn approve_token(
-    token: ContractAddress, 
-    from: ContractAddress, 
-    spender: ContractAddress, 
-    amount: u256
+    token: ContractAddress, from: ContractAddress, spender: ContractAddress, amount: u256,
 ) {
     let token_dispatcher = ERC20ABIDispatcher { contract_address: token };
     start_cheat_caller_address(token, from);
@@ -217,10 +194,7 @@ pub fn approve_token(
 }
 
 pub fn transfer_token(
-    token: ContractAddress, 
-    from: ContractAddress, 
-    to: ContractAddress, 
-    amount: u256
+    token: ContractAddress, from: ContractAddress, to: ContractAddress, amount: u256,
 ) {
     let token_dispatcher = ERC20ABIDispatcher { contract_address: token };
     start_cheat_caller_address(token, from);

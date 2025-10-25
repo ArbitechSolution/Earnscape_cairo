@@ -1,11 +1,11 @@
 #[starknet::contract]
 mod EarnscapeBulkVesting {
-    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess
-    };
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -29,18 +29,18 @@ mod EarnscapeBulkVesting {
         total_amount_vested: u256,
         cliff_period: u64,
         sliced_period: u64,
-        category_names: Map::<u8, felt252>,
-        category_supply: Map::<u8, u256>,
-        category_remaining_supply: Map::<u8, u256>,
-        category_vesting_duration: Map::<u8, u64>,
-        user_vesting_count: Map::<ContractAddress, u32>,
-        vesting_beneficiary: Map::<(ContractAddress, u32), ContractAddress>,
-        vesting_cliff: Map::<(ContractAddress, u32), u64>,
-        vesting_start: Map::<(ContractAddress, u32), u64>,
-        vesting_duration: Map::<(ContractAddress, u32), u64>,
-        vesting_slice_period: Map::<(ContractAddress, u32), u64>,
-        vesting_amount_total: Map::<(ContractAddress, u32), u256>,
-        vesting_released: Map::<(ContractAddress, u32), u256>,
+        category_names: Map<u8, felt252>,
+        category_supply: Map<u8, u256>,
+        category_remaining_supply: Map<u8, u256>,
+        category_vesting_duration: Map<u8, u64>,
+        user_vesting_count: Map<ContractAddress, u32>,
+        vesting_beneficiary: Map<(ContractAddress, u32), ContractAddress>,
+        vesting_cliff: Map<(ContractAddress, u32), u64>,
+        vesting_start: Map<(ContractAddress, u32), u64>,
+        vesting_duration: Map<(ContractAddress, u32), u64>,
+        vesting_slice_period: Map<(ContractAddress, u32), u64>,
+        vesting_amount_total: Map<(ContractAddress, u32), u256>,
+        vesting_released: Map<(ContractAddress, u32), u256>,
     }
 
     #[event]
@@ -95,7 +95,7 @@ mod EarnscapeBulkVesting {
         earn_stark_manager: ContractAddress,
         escrow_address: ContractAddress,
         token_address: ContractAddress,
-        owner: ContractAddress
+        owner: ContractAddress,
     ) {
         self.ownable.initializer(owner);
         self.earn_stark_manager.write(earn_stark_manager);
@@ -171,7 +171,7 @@ mod EarnscapeBulkVesting {
             cliff: u64,
             duration: u64,
             slice_period_seconds: u64,
-            amount: u256
+            amount: u256,
         ) {
             assert(duration >= cliff, 'Duration must be >= cliff');
             let cliff_time = start + cliff;
@@ -180,20 +180,24 @@ mod EarnscapeBulkVesting {
             self.vesting_cliff.entry((beneficiary, current_index)).write(cliff_time);
             self.vesting_start.entry((beneficiary, current_index)).write(start);
             self.vesting_duration.entry((beneficiary, current_index)).write(duration);
-            self.vesting_slice_period.entry((beneficiary, current_index)).write(slice_period_seconds);
+            self
+                .vesting_slice_period
+                .entry((beneficiary, current_index))
+                .write(slice_period_seconds);
             self.vesting_amount_total.entry((beneficiary, current_index)).write(amount);
             self.vesting_released.entry((beneficiary, current_index)).write(0);
             self.user_vesting_count.entry(beneficiary).write(current_index + 1);
             self.total_amount_vested.write(self.total_amount_vested.read() + amount);
-            self.emit(VestingScheduleCreated {
-                beneficiary, start, cliff, duration, slice_period_seconds, amount
-            });
+            self
+                .emit(
+                    VestingScheduleCreated {
+                        beneficiary, start, cliff, duration, slice_period_seconds, amount,
+                    },
+                );
         }
 
         fn _compute_releasable_amount(
-            ref self: ContractState,
-            beneficiary: ContractAddress,
-            index: u32
+            ref self: ContractState, beneficiary: ContractAddress, index: u32,
         ) -> (u256, u256) {
             let current_time = get_block_timestamp();
             let cliff = self.vesting_cliff.entry((beneficiary, index)).read();
@@ -226,7 +230,7 @@ mod EarnscapeBulkVesting {
             category_id: u8,
             names: Span<felt252>,
             user_addresses: Span<ContractAddress>,
-            amounts: Span<u256>
+            amounts: Span<u256>,
         ) {
             self.ownable.assert_only_owner();
             assert(category_id < 9, 'Invalid category');
@@ -243,10 +247,10 @@ mod EarnscapeBulkVesting {
                     let needed = amount - remaining;
                     assert(
                         category_id == 0 || category_id == 1 || category_id == 2,
-                        'Cannot withdraw for category'
+                        'Cannot withdraw for category',
                     );
-                    let escrow_dispatcher = IEscrowDispatcher { 
-                        contract_address: self.escrow.read() 
+                    let escrow_dispatcher = IEscrowDispatcher {
+                        contract_address: self.escrow.read(),
                     };
                     escrow_dispatcher.withdraw_to_contract4(needed);
                     let new_supply = self.category_supply.entry(category_id).read() + needed;
@@ -261,16 +265,16 @@ mod EarnscapeBulkVesting {
                 let duration = self.category_vesting_duration.entry(category_id).read();
                 let cliff = self.cliff_period.read();
                 let slice_period = self.sliced_period.read();
-                self._create_vesting_schedule(
-                    user_address, start, cliff, duration, slice_period, amount
-                );
+                self
+                    ._create_vesting_schedule(
+                        user_address, start, cliff, duration, slice_period, amount,
+                    );
                 i += 1;
             };
         }
 
         fn calculate_releasable_amount(
-            ref self: ContractState,
-            beneficiary: ContractAddress
+            ref self: ContractState, beneficiary: ContractAddress,
         ) -> (u256, u256) {
             let vesting_count = self.user_vesting_count.entry(beneficiary).read();
             let mut total_releasable: u256 = 0;
@@ -281,7 +285,7 @@ mod EarnscapeBulkVesting {
                 total_releasable += releasable;
                 total_remaining += remaining;
                 i += 1;
-            };
+            }
             (total_releasable, total_remaining)
         }
 
@@ -301,7 +305,10 @@ mod EarnscapeBulkVesting {
                         releasable_amount
                     };
                     let current_released = self.vesting_released.entry((beneficiary, i)).read();
-                    self.vesting_released.entry((beneficiary, i)).write(current_released + release_amount);
+                    self
+                        .vesting_released
+                        .entry((beneficiary, i))
+                        .write(current_released + release_amount);
                     remaining_amount -= release_amount;
                     self.token.read().transfer(beneficiary, release_amount);
                 }
@@ -309,7 +316,9 @@ mod EarnscapeBulkVesting {
             };
         }
 
-        fn release_immediately(ref self: ContractState, category_id: u8, recipient: ContractAddress) {
+        fn release_immediately(
+            ref self: ContractState, category_id: u8, recipient: ContractAddress,
+        ) {
             self.ownable.assert_only_owner();
             assert(category_id == 3 || category_id == 7, 'Only Public/Liquidity allowed');
             let amount = self.category_remaining_supply.entry(category_id).read();
@@ -319,21 +328,28 @@ mod EarnscapeBulkVesting {
             self.emit(TokensReleasedImmediately { category_id, recipient, amount });
         }
 
-        fn update_category_supply(ref self: ContractState, category_id: u8, additional_supply: u256) {
+        fn update_category_supply(
+            ref self: ContractState, category_id: u8, additional_supply: u256,
+        ) {
             self.ownable.assert_only_owner();
             assert(category_id < 9, 'Invalid category');
             let current_remaining = self.category_remaining_supply.entry(category_id).read();
-            self.category_remaining_supply.entry(category_id).write(current_remaining + additional_supply);
+            self
+                .category_remaining_supply
+                .entry(category_id)
+                .write(current_remaining + additional_supply);
             self.emit(SupplyUpdated { category_id, additional_supply });
         }
 
-        fn get_category_details(self: @ContractState, category_id: u8) -> (felt252, u256, u256, u64) {
+        fn get_category_details(
+            self: @ContractState, category_id: u8,
+        ) -> (felt252, u256, u256, u64) {
             assert(category_id < 9, 'Invalid category');
             (
                 self.category_names.entry(category_id).read(),
                 self.category_supply.entry(category_id).read(),
                 self.category_remaining_supply.entry(category_id).read(),
-                self.category_vesting_duration.entry(category_id).read()
+                self.category_vesting_duration.entry(category_id).read(),
             )
         }
 
@@ -342,9 +358,7 @@ mod EarnscapeBulkVesting {
         }
 
         fn get_vesting_schedule(
-            self: @ContractState,
-            beneficiary: ContractAddress,
-            index: u32
+            self: @ContractState, beneficiary: ContractAddress, index: u32,
         ) -> (ContractAddress, u64, u64, u64, u64, u256, u256) {
             (
                 self.vesting_beneficiary.entry((beneficiary, index)).read(),
@@ -353,7 +367,7 @@ mod EarnscapeBulkVesting {
                 self.vesting_duration.entry((beneficiary, index)).read(),
                 self.vesting_slice_period.entry((beneficiary, index)).read(),
                 self.vesting_amount_total.entry((beneficiary, index)).read(),
-                self.vesting_released.entry((beneficiary, index)).read()
+                self.vesting_released.entry((beneficiary, index)).read(),
             )
         }
 
@@ -375,9 +389,7 @@ mod EarnscapeBulkVesting {
 
         // Emergency function to recover stuck tokens
         fn recover_stuck_token(
-            ref self: ContractState,
-            token_address: ContractAddress,
-            amount: u256
+            ref self: ContractState, token_address: ContractAddress, amount: u256,
         ) {
             self.ownable.assert_only_owner();
             let token = IERC20Dispatcher { contract_address: token_address };
@@ -396,18 +408,26 @@ trait IEarnscapeBulkVesting<TContractState> {
         category_id: u8,
         names: Span<felt252>,
         user_addresses: Span<starknet::ContractAddress>,
-        amounts: Span<u256>
+        amounts: Span<u256>,
     );
-    fn calculate_releasable_amount(ref self: TContractState, beneficiary: starknet::ContractAddress) -> (u256, u256);
+    fn calculate_releasable_amount(
+        ref self: TContractState, beneficiary: starknet::ContractAddress,
+    ) -> (u256, u256);
     fn release_vested_amount(ref self: TContractState, beneficiary: starknet::ContractAddress);
-    fn release_immediately(ref self: TContractState, category_id: u8, recipient: starknet::ContractAddress);
+    fn release_immediately(
+        ref self: TContractState, category_id: u8, recipient: starknet::ContractAddress,
+    );
     fn update_category_supply(ref self: TContractState, category_id: u8, additional_supply: u256);
     fn get_category_details(self: @TContractState, category_id: u8) -> (felt252, u256, u256, u64);
     fn get_user_vesting_count(self: @TContractState, beneficiary: starknet::ContractAddress) -> u32;
-    fn get_vesting_schedule(self: @TContractState, beneficiary: starknet::ContractAddress, index: u32) -> (starknet::ContractAddress, u64, u64, u64, u64, u256, u256);
+    fn get_vesting_schedule(
+        self: @TContractState, beneficiary: starknet::ContractAddress, index: u32,
+    ) -> (starknet::ContractAddress, u64, u64, u64, u64, u256, u256);
     fn get_total_amount_vested(self: @TContractState) -> u256;
     fn get_earn_stark_manager(self: @TContractState) -> starknet::ContractAddress;
     fn get_escrow_contract(self: @TContractState) -> starknet::ContractAddress;
     fn get_token_address(self: @TContractState) -> starknet::ContractAddress;
-    fn recover_stuck_token(ref self: TContractState, token_address: starknet::ContractAddress, amount: u256);
+    fn recover_stuck_token(
+        ref self: TContractState, token_address: starknet::ContractAddress, amount: u256,
+    );
 }

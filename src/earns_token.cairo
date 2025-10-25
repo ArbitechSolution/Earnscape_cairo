@@ -3,11 +3,10 @@
 
 #[starknet::contract]
 mod EarnsToken {
-    use starknet::ContractAddress;
-    use starknet::get_contract_address;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_contract_address};
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -29,7 +28,7 @@ mod EarnsToken {
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         contract4: ContractAddress, // BulkVesting address
-        contract5: ContractAddress, // Escrow address
+        contract5: ContractAddress // Escrow address
     }
 
     #[event]
@@ -47,10 +46,10 @@ mod EarnsToken {
     fn constructor(ref self: ContractState, owner: ContractAddress) {
         // Initialize ERC20
         self.erc20.initializer("EARNS", "EARN");
-        
+
         // Initialize Ownable
         self.ownable.initializer(owner);
-        
+
         // Mint total supply to contract itself
         let contract_address = get_contract_address();
         self.erc20.mint(contract_address, TOTAL_SUPPLY);
@@ -59,38 +58,33 @@ mod EarnsToken {
     #[abi(embed_v0)]
     impl EarnsTokenImpl of super::IEarnsToken<ContractState> {
         fn set_contract4(
-            ref self: ContractState,
-            _contract4: ContractAddress,
-            _contract5: ContractAddress
+            ref self: ContractState, _contract4: ContractAddress, _contract5: ContractAddress,
         ) {
             self.ownable.assert_only_owner();
             self.contract4.write(_contract4);
             self.contract5.write(_contract5);
         }
 
-        fn renounce_ownership_with_transfer(
-            ref self: ContractState,
-            sold_supply: u256
-        ) {
+        fn renounce_ownership_with_transfer(ref self: ContractState, sold_supply: u256) {
             self.ownable.assert_only_owner();
-            
+
             assert(sold_supply <= TOTAL_SUPPLY, 'Sold supply exceeds total');
-            
+
             let unsold_supply = TOTAL_SUPPLY - sold_supply;
             let contract_addr = get_contract_address();
-            
+
             // Transfer unsold supply to contract5 (Escrow)
             if unsold_supply > 0 {
                 let contract5_addr = self.contract5.read();
                 self.erc20._transfer(contract_addr, contract5_addr, unsold_supply);
             }
-            
+
             // Transfer sold supply to contract4 (BulkVesting)
             if sold_supply > 0 {
                 let contract4_addr = self.contract4.read();
                 self.erc20._transfer(contract_addr, contract4_addr, sold_supply);
             }
-            
+
             // Renounce ownership
             self.ownable.renounce_ownership();
         }
@@ -110,7 +104,7 @@ trait IEarnsToken<TContractState> {
     fn set_contract4(
         ref self: TContractState,
         _contract4: starknet::ContractAddress,
-        _contract5: starknet::ContractAddress
+        _contract5: starknet::ContractAddress,
     );
     fn renounce_ownership_with_transfer(ref self: TContractState, sold_supply: u256);
     fn get_contract4(self: @TContractState) -> starknet::ContractAddress;

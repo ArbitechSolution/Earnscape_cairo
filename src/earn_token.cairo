@@ -43,7 +43,7 @@ mod EarnToken {
     fn constructor(ref self: ContractState, owner: ContractAddress) {
         // Initialize ERC20 with name "EarnToken" and symbol "EARN"
         self.erc20.initializer("EarnToken", "EARN");
-        
+
         // Set owner
         self.ownable.initializer(owner);
 
@@ -57,18 +57,16 @@ mod EarnToken {
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
-        ) {
-            // No custom logic - all transfers allowed
+            amount: u256,
+        ) { // No custom logic - all transfers allowed
         }
 
         fn after_update(
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
-        ) {
-            // No custom logic
+            amount: u256,
+        ) { // No custom logic
         }
     }
 }

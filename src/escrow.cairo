@@ -3,16 +3,13 @@
 
 #[starknet::contract]
 mod Escrow {
-    use starknet::ContractAddress;
-    use starknet::get_caller_address;
-    use starknet::get_block_timestamp;
-    use starknet::get_contract_address;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-    
+
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -48,7 +45,7 @@ mod Escrow {
         ref self: ContractState,
         owner: ContractAddress,
         earns_token: ContractAddress,
-        earnscape_treasury: ContractAddress
+        earnscape_treasury: ContractAddress,
     ) {
         self.ownable.initializer(owner);
         self.earns_token.write(earns_token);
@@ -91,10 +88,7 @@ mod Escrow {
         }
 
         fn transfer_from(
-            ref self: ContractState,
-            from: ContractAddress,
-            to: ContractAddress,
-            amount: u256
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u256,
         ) {
             self.ownable.assert_only_owner();
             let earns_token = self.earns_token.read();
@@ -119,7 +113,7 @@ mod Escrow {
             let caller = get_caller_address();
             let contract4 = self.contract4.read();
             assert(caller == contract4, 'Only Contract 4');
-            
+
             let earns_token = self.earns_token.read();
             let contract = IERC20Dispatcher { contract_address: earns_token };
             let balance = contract.balance_of(get_contract_address());
@@ -149,7 +143,7 @@ trait IEscrow<TContractState> {
         ref self: TContractState,
         from: starknet::ContractAddress,
         to: starknet::ContractAddress,
-        amount: u256
+        amount: u256,
     );
     fn transfer_all(ref self: TContractState);
     fn withdraw_to_contract4(ref self: TContractState, amount: u256);
