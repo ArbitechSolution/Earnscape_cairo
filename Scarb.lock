@@ -6,6 +6,7 @@ name = "earnscape_contracts"
 version = "0.1.0"
 dependencies = [
  "openzeppelin",
+ "snforge_std",
 ]
 
 [[package]]
@@ -113,3 +114,18 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.20.0#77
 name = "openzeppelin_utils"
 version = "0.20.0"
 source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+
+[[package]]
+name = "snforge_scarb_plugin"
+version = "0.51.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:6783f6990b19ec24f757381e99938d5966df1e7c734ec45e2c7c8133207c8624"
+
+[[package]]
+name = "snforge_std"
+version = "0.51.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:5af23a16bc9d7067cfe99bbbe69118773eb7cc9411b2051513c7c1c6995e57a1"
+dependencies = [
+ "snforge_scarb_plugin",
+]
