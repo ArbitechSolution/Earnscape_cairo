@@ -10,6 +10,9 @@ mod EarnToken {
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
+    const INITIAL_SUPPLY: u256 =
+        1_000_000_000_000_000_000_000_000_000; // 1 billion with 18 decimals
+
     // ERC20 implementations
     #[abi(embed_v0)]
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
@@ -47,8 +50,8 @@ mod EarnToken {
         // Set owner
         self.ownable.initializer(owner);
 
-        // Mint initial supply: 1 billion tokens (1,000,000,000 * 10^18)
-        self.erc20.mint(owner, 1000000000000000000000000000);
+        // Mint initial supply
+        self.erc20.mint(owner, INITIAL_SUPPLY);
     }
 
     // ERC20 Hooks - empty implementation (standard ERC20, no transfer restrictions)

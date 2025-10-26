@@ -3,6 +3,7 @@
 
 #[starknet::contract]
 mod StEarnToken {
+    use core::num::traits::Zero;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::ERC20Component;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -38,6 +39,20 @@ mod StEarnToken {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         ERC20Event: ERC20Component::Event,
+        VestingAddressUpdated: VestingAddressUpdated,
+        StakingAddressUpdated: StakingAddressUpdated,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct VestingAddressUpdated {
+        old_address: ContractAddress,
+        new_address: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct StakingAddressUpdated {
+        old_address: ContractAddress,
+        new_address: ContractAddress,
     }
 
     #[constructor]
@@ -60,14 +75,23 @@ mod StEarnToken {
 
         fn set_vesting_address(ref self: ContractState, vesting: ContractAddress) {
             self.ownable.assert_only_owner();
+            let old_address = self.vesting_contract.read();
             self.vesting_contract.write(vesting);
+            self.emit(VestingAddressUpdated { old_address, new_address: vesting });
         }
 
         fn set_staking_contract_address(
             ref self: ContractState, staking_contract: ContractAddress,
         ) {
             self.ownable.assert_only_owner();
+            let old_address = self.staking_contract.read();
             self.staking_contract.write(staking_contract);
+            self
+                .emit(
+                    StakingAddressUpdated {
+                        old_address: old_address, new_address: staking_contract,
+                    },
+                );
         }
 
         fn mint(ref self: ContractState, to: ContractAddress, amount: u256) {
@@ -75,6 +99,10 @@ mod StEarnToken {
             let caller = get_caller_address();
             let vesting_addr = self.vesting_contract.read();
             let staking_addr = self.staking_contract.read();
+            assert(
+                vesting_addr.is_non_zero() && staking_addr.is_non_zero(),
+                'Contracts not configured',
+            );
             assert(caller == vesting_addr || caller == staking_addr, 'Not allowed to call');
 
             self.erc20.mint(to, amount);
@@ -85,6 +113,10 @@ mod StEarnToken {
             let caller = get_caller_address();
             let vesting_addr = self.vesting_contract.read();
             let staking_addr = self.staking_contract.read();
+            assert(
+                vesting_addr.is_non_zero() && staking_addr.is_non_zero(),
+                'Contracts not configured',
+            );
             assert(caller == vesting_addr || caller == staking_addr, 'Not allowed to call');
 
             self.erc20.burn(user, amount);

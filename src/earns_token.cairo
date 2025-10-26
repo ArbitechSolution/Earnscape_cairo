@@ -57,9 +57,11 @@ mod EarnsToken {
 
     #[abi(embed_v0)]
     impl EarnsTokenImpl of super::IEarnsToken<ContractState> {
-        fn set_contract4(
+        fn set_contract4_and_contract5(
             ref self: ContractState, _contract4: ContractAddress, _contract5: ContractAddress,
         ) {
+            assert(_contract4.is_non_zero() && _contract5.is_non_zero(), 'Invalid addresses');
+            assert(_contract4 != _contract5, 'Addresses cannot be the same');
             self.ownable.assert_only_owner();
             self.contract4.write(_contract4);
             self.contract5.write(_contract5);
@@ -70,18 +72,21 @@ mod EarnsToken {
 
             assert(sold_supply <= TOTAL_SUPPLY, 'Sold supply exceeds total');
 
+            let contract4_addr = self.contract4.read();
+            let contract5_addr = self.contract5.read();
+            assert(contract4_addr.is_non_zero(), 'Contract4 not set');
+            assert(contract5_addr.is_non_zero(), 'Contract5 not set');
+
             let unsold_supply = TOTAL_SUPPLY - sold_supply;
             let contract_addr = get_contract_address();
 
             // Transfer unsold supply to contract5 (Escrow)
             if unsold_supply > 0 {
-                let contract5_addr = self.contract5.read();
                 self.erc20._transfer(contract_addr, contract5_addr, unsold_supply);
             }
 
             // Transfer sold supply to contract4 (BulkVesting)
             if sold_supply > 0 {
-                let contract4_addr = self.contract4.read();
                 self.erc20._transfer(contract_addr, contract4_addr, sold_supply);
             }
 
@@ -101,7 +106,7 @@ mod EarnsToken {
 
 #[starknet::interface]
 trait IEarnsToken<TContractState> {
-    fn set_contract4(
+    fn set_contract4_and_contract5(
         ref self: TContractState,
         _contract4: starknet::ContractAddress,
         _contract5: starknet::ContractAddress,
