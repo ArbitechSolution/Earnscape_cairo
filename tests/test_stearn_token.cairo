@@ -87,14 +87,32 @@ fn test_set_staking_contract_address_not_owner() {
 // ============================================================================
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_mint_from_vesting() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set only vesting contract (staking not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Mint from vesting contract - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_mint_from_vesting_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Set vesting contract
+    // Set both vesting and staking contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER()); // Configure staking too
     stop_cheat_caller_address(contract_address);
 
     // Mint from vesting contract
@@ -107,14 +125,32 @@ fn test_mint_from_vesting() {
 }
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_mint_from_staking() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set only staking contract (vesting not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_staking_contract_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Mint from staking contract - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_mint_from_staking_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Set staking contract
+    // Set both staking and vesting contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_staking_contract_address(USER1());
+    token.set_vesting_address(OWNER()); // Configure vesting too
     stop_cheat_caller_address(contract_address);
 
     // Mint from staking contract
@@ -127,10 +163,28 @@ fn test_mint_from_staking() {
 }
 
 #[test]
-#[should_panic(expected: ('Not allowed to call',))]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_mint_unauthorized() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
+
+    // USER1 tries to mint without contracts being configured
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Not allowed to call',))]
+fn test_mint_unauthorized_configured() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Configure both contracts
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(OWNER());
+    token.set_staking_contract_address(USER2());
+    stop_cheat_caller_address(contract_address);
 
     // USER1 tries to mint without being vesting or staking
     start_cheat_caller_address(contract_address, USER1());
@@ -139,13 +193,28 @@ fn test_mint_unauthorized() {
 }
 
 #[test]
-#[should_panic(expected: ('Not allowed to call',))]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_mint_owner_cannot_mint() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
 
-    // Even owner cannot mint directly
+    // Even owner cannot mint without contracts configured
     start_cheat_caller_address(contract_address, OWNER());
+    token.mint(USER1(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Not allowed to call',))]
+fn test_mint_owner_cannot_mint_configured() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Configure both contracts
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    token.set_staking_contract_address(USER2());
+    // Even owner cannot mint directly
     token.mint(USER1(), HUNDRED_TOKENS);
     stop_cheat_caller_address(contract_address);
 }
@@ -155,14 +224,32 @@ fn test_mint_owner_cannot_mint() {
 // ============================================================================
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_burn_from_vesting() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set only vesting contract (staking not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_burn_from_vesting_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Set vesting contract and mint first
+    // Set both vesting and staking contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER()); // Configure staking too
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -179,14 +266,32 @@ fn test_burn_from_vesting() {
 }
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_burn_from_staking() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set only staking contract (vesting not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_staking_contract_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_burn_from_staking_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Set staking contract and mint first
+    // Set both staking and vesting contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_staking_contract_address(USER1());
+    token.set_vesting_address(OWNER()); // Configure vesting too
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -203,14 +308,32 @@ fn test_burn_from_staking() {
 }
 
 #[test]
-#[should_panic(expected: ('Not allowed to call',))]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_burn_unauthorized() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
 
-    // Set up vesting and mint
+    // Set up only vesting (staking not configured)
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic due to unconfigured staking
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Not allowed to call',))]
+fn test_burn_unauthorized_configured() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set up both vesting and staking
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER());
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -228,14 +351,32 @@ fn test_burn_unauthorized() {
 // ============================================================================
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_transfer_to_vesting() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Setup: only vesting contract (staking not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_transfer_to_vesting_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Setup: vesting contract and mint to USER2
+    // Setup: both vesting and staking contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER()); // Configure staking too
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -252,14 +393,32 @@ fn test_transfer_to_vesting() {
 }
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_transfer_to_staking() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Setup: only staking contract (vesting not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_staking_contract_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_transfer_to_staking_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Setup: staking contract and mint to USER2
+    // Setup: both staking and vesting contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_staking_contract_address(USER1());
+    token.set_vesting_address(OWNER()); // Configure vesting too
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -276,15 +435,33 @@ fn test_transfer_to_staking() {
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: transfer to 0',))]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_transfer_to_zero_address_burn() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Setup: only vesting (staking not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), HUNDRED_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('ERC20: transfer to 0',))]
+fn test_transfer_to_zero_address_burn_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Setup: mint to USER2
+    // Setup: both contracts configured
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER());
     stop_cheat_caller_address(contract_address);
 
     start_cheat_caller_address(contract_address, USER1());
@@ -321,14 +498,32 @@ fn test_transfer_to_regular_user_fails() {
 }
 
 #[test]
+#[should_panic(expected: ('Contracts not configured',))]
 fn test_mint_and_burn_cycle() {
+    let contract_address = setup_stearn_token();
+    let token = IStEarnTokenDispatcher { contract_address };
+
+    // Set only vesting contract (staking not configured)
+    start_cheat_caller_address(contract_address, OWNER());
+    token.set_vesting_address(USER1());
+    stop_cheat_caller_address(contract_address);
+
+    // Try to mint - should panic
+    start_cheat_caller_address(contract_address, USER1());
+    token.mint(USER2(), THOUSAND_TOKENS);
+    stop_cheat_caller_address(contract_address);
+}
+
+#[test]
+fn test_mint_and_burn_cycle_configured() {
     let contract_address = setup_stearn_token();
     let token = IStEarnTokenDispatcher { contract_address };
     let erc20 = ERC20ABIDispatcher { contract_address };
 
-    // Set vesting contract
+    // Set both vesting and staking contracts
     start_cheat_caller_address(contract_address, OWNER());
     token.set_vesting_address(USER1());
+    token.set_staking_contract_address(OWNER());
     stop_cheat_caller_address(contract_address);
 
     // Mint
