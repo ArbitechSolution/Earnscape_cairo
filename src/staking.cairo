@@ -1,11 +1,11 @@
 #[starknet::contract]
 mod EarnscapeStaking {
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess
-    };
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -31,7 +31,7 @@ mod EarnscapeStaking {
         fn get_stearn_balance(self: @TContractState, beneficiary: ContractAddress) -> u256;
         fn stearn_transfer(ref self: TContractState, sender: ContractAddress, amount: u256);
         fn calculate_releasable_amount(
-            self: @TContractState, beneficiary: ContractAddress
+            self: @TContractState, beneficiary: ContractAddress,
         ) -> (u256, u256);
     }
 
@@ -55,25 +55,25 @@ mod EarnscapeStaking {
         vesting_contract: ContractAddress,
         earn_stark_manager: ContractAddress,
         // User data for EARN staking (user => category => data)
-        user_levels: Map::<(ContractAddress, felt252), u256>,
-        user_staked_amounts: Map::<(ContractAddress, felt252), u256>,
-        user_staked_tokens: Map::<(ContractAddress, felt252), ContractAddress>,
-        user_categories_count: Map::<ContractAddress, u32>,
-        user_categories: Map::<(ContractAddress, u32), felt252>,
+        user_levels: Map<(ContractAddress, felt252), u256>,
+        user_staked_amounts: Map<(ContractAddress, felt252), u256>,
+        user_staked_tokens: Map<(ContractAddress, felt252), ContractAddress>,
+        user_categories_count: Map<ContractAddress, u32>,
+        user_categories: Map<(ContractAddress, u32), felt252>,
         // User data for stEARN staking
-        stearn_user_levels: Map::<(ContractAddress, felt252), u256>,
-        stearn_user_staked_amounts: Map::<(ContractAddress, felt252), u256>,
-        stearn_user_staked_tokens: Map::<(ContractAddress, felt252), ContractAddress>,
-        stearn_user_categories_count: Map::<ContractAddress, u32>,
-        stearn_user_categories: Map::<(ContractAddress, u32), felt252>,
+        stearn_user_levels: Map<(ContractAddress, felt252), u256>,
+        stearn_user_staked_amounts: Map<(ContractAddress, felt252), u256>,
+        stearn_user_staked_tokens: Map<(ContractAddress, felt252), ContractAddress>,
+        stearn_user_categories_count: Map<ContractAddress, u32>,
+        stearn_user_categories: Map<(ContractAddress, u32), felt252>,
         // Level costs per category
-        level_costs: Map::<(felt252, u8), u256>,
+        level_costs: Map<(felt252, u8), u256>,
         // Staking status
-        is_staked_with_stearn: Map::<(ContractAddress, ContractAddress), bool>,
-        is_staked_with_earn: Map::<(ContractAddress, ContractAddress), bool>,
-        stearn_staked_amount: Map::<(ContractAddress, ContractAddress), u256>,
-        earn_staked_amount: Map::<(ContractAddress, ContractAddress), u256>,
-        user_pending_stearn_tax: Map::<ContractAddress, u256>,
+        is_staked_with_stearn: Map<(ContractAddress, ContractAddress), bool>,
+        is_staked_with_earn: Map<(ContractAddress, ContractAddress), bool>,
+        stearn_staked_amount: Map<(ContractAddress, ContractAddress), u256>,
+        earn_staked_amount: Map<(ContractAddress, ContractAddress), u256>,
+        user_pending_stearn_tax: Map<ContractAddress, u256>,
     }
 
     #[event]
@@ -158,7 +158,7 @@ mod EarnscapeStaking {
         owner: ContractAddress,
         earn_token: ContractAddress,
         stearn_token: ContractAddress,
-        earn_stark_manager: ContractAddress
+        earn_stark_manager: ContractAddress,
     ) {
         assert(earn_token.into() != 0, 'Invalid token address');
         assert(earn_stark_manager.into() != 0, 'Invalid manager address');
@@ -186,11 +186,8 @@ mod EarnscapeStaking {
         fn _set_default_level_costs(ref self: ContractState) {
             let categories: Array<felt252> = array!['T', 'R', 'A', 'V', 'E', 'L'];
             let costs: Array<u256> = array![
-                100000000000000000000,
-                200000000000000000000,
-                400000000000000000000,
-                800000000000000000000,
-                1600000000000000000000
+                100000000000000000000, 200000000000000000000, 400000000000000000000,
+                800000000000000000000, 1600000000000000000000,
             ];
 
             let mut cat_idx: u32 = 0;
@@ -201,7 +198,7 @@ mod EarnscapeStaking {
                     let cost = *costs.at((level - 1).into());
                     self.level_costs.entry((category, level)).write(cost);
                     level += 1;
-                };
+                }
                 cat_idx += 1;
             };
         }
@@ -216,7 +213,7 @@ mod EarnscapeStaking {
         }
 
         fn _category_exists(
-            self: @ContractState, user: ContractAddress, category: felt252
+            self: @ContractState, user: ContractAddress, category: felt252,
         ) -> bool {
             let count = self.user_categories_count.entry(user).read();
             let mut i: u32 = 0;
@@ -225,12 +222,12 @@ mod EarnscapeStaking {
                     return true;
                 }
                 i += 1;
-            };
+            }
             false
         }
 
         fn _stearn_category_exists(
-            self: @ContractState, user: ContractAddress, category: felt252
+            self: @ContractState, user: ContractAddress, category: felt252,
         ) -> bool {
             let count = self.stearn_user_categories_count.entry(user).read();
             let mut i: u32 = 0;
@@ -239,7 +236,7 @@ mod EarnscapeStaking {
                     return true;
                 }
                 i += 1;
-            };
+            }
             false
         }
 
@@ -281,7 +278,7 @@ mod EarnscapeStaking {
                     }
                 }
                 i += 1;
-            };
+            }
 
             let mixed = has_a && has_other;
             if mixed {
@@ -293,9 +290,7 @@ mod EarnscapeStaking {
             }
         }
 
-        fn _detect_mixed_rate_stearn(
-            self: @ContractState, user: ContractAddress
-        ) -> (bool, u256) {
+        fn _detect_mixed_rate_stearn(self: @ContractState, user: ContractAddress) -> (bool, u256) {
             let count = self.stearn_user_categories_count.entry(user).read();
             let mut has_a = false;
             let mut has_other = false;
@@ -313,7 +308,7 @@ mod EarnscapeStaking {
                     }
                 }
                 i += 1;
-            };
+            }
 
             let mixed = has_a && has_other;
             if mixed {
@@ -335,7 +330,7 @@ mod EarnscapeStaking {
                 self.user_staked_amounts.entry((user, category)).write(0);
                 self.user_staked_tokens.entry((user, category)).write(zero_address);
                 i += 1;
-            };
+            }
             self.user_categories_count.entry(user).write(0);
         }
 
@@ -349,13 +344,13 @@ mod EarnscapeStaking {
                 self.stearn_user_staked_amounts.entry((user, category)).write(0);
                 self.stearn_user_staked_tokens.entry((user, category)).write(zero_address);
                 i += 1;
-            };
+            }
             self.stearn_user_categories_count.entry(user).write(0);
         }
 
         fn _adjust_stearn_balance(ref self: ContractState, user: ContractAddress) {
             let vesting = IEarnscapeVestingDispatcher {
-                contract_address: self.vesting_contract.read()
+                contract_address: self.vesting_contract.read(),
             };
             let (_, locked) = vesting.calculate_releasable_amount(user);
             let stearn_balance = vesting.get_stearn_balance(user);
@@ -371,10 +366,7 @@ mod EarnscapeStaking {
         }
 
         fn _stake_earn(
-            ref self: ContractState,
-            category: felt252,
-            levels: Span<u256>,
-            user_earn_balance: u256
+            ref self: ContractState, category: felt252, levels: Span<u256>, user_earn_balance: u256,
         ) {
             let caller = get_caller_address();
             let mut total_required: u256 = 0;
@@ -386,17 +378,14 @@ mod EarnscapeStaking {
                 assert(level_u256 > 0 && level_u256 <= MAX_LEVEL.into(), 'Invalid level');
 
                 let stearn_level = self.stearn_user_levels.entry((caller, category)).read();
-                assert(
-                    stearn_level < level_u256,
-                    'Level staked with stEARN'
-                );
+                assert(stearn_level < level_u256, 'Level staked with stEARN');
 
                 let level: u8 = level_u256.try_into().unwrap();
                 let required_amount = self.level_costs.entry((category, level)).read();
                 total_required += required_amount;
 
                 i += 1;
-            };
+            }
 
             assert(user_earn_balance >= total_required, 'Insufficient EARN balance');
 
@@ -433,8 +422,11 @@ mod EarnscapeStaking {
             self
                 .emit(
                     Staked {
-                        user: caller, amount: total_required, category: category, level: final_level
-                    }
+                        user: caller,
+                        amount: total_required,
+                        category: category,
+                        level: final_level,
+                    },
                 );
         }
 
@@ -442,7 +434,7 @@ mod EarnscapeStaking {
             ref self: ContractState,
             category: felt252,
             levels: Span<u256>,
-            user_stearn_balance: u256
+            user_stearn_balance: u256,
         ) {
             let caller = get_caller_address();
             let mut total_required: u256 = 0;
@@ -454,16 +446,14 @@ mod EarnscapeStaking {
                 assert(level_u256 > 0 && level_u256 <= MAX_LEVEL.into(), 'Invalid level');
 
                 let earn_level = self.user_levels.entry((caller, category)).read();
-                assert(
-                    earn_level < level_u256, 'Level staked with EARN'
-                );
+                assert(earn_level < level_u256, 'Level staked with EARN');
 
                 let level: u8 = level_u256.try_into().unwrap();
                 let required_amount = self.level_costs.entry((category, level)).read();
                 total_required += required_amount;
 
                 i += 1;
-            };
+            }
 
             assert(user_stearn_balance >= total_required, 'Insufficient stEARN balance');
 
@@ -486,7 +476,7 @@ mod EarnscapeStaking {
             }
 
             let vesting = IEarnscapeVestingDispatcher {
-                contract_address: self.vesting_contract.read()
+                contract_address: self.vesting_contract.read(),
             };
             vesting.stearn_transfer(caller, total_required);
 
@@ -500,13 +490,16 @@ mod EarnscapeStaking {
             self
                 .emit(
                     Staked {
-                        user: caller, amount: total_required, category: category, level: final_level
-                    }
+                        user: caller,
+                        amount: total_required,
+                        category: category,
+                        level: final_level,
+                    },
                 );
         }
 
         fn _handle_category_a_tax(
-            self: @ContractState, user: ContractAddress, category: felt252
+            self: @ContractState, user: ContractAddress, category: felt252,
         ) -> u256 {
             let mut total_staked_in_a: u256 = 0;
             let count = self.user_categories_count.entry(user).read();
@@ -518,7 +511,7 @@ mod EarnscapeStaking {
                     total_staked_in_a += self.user_staked_amounts.entry((user, cat)).read();
                 }
                 i += 1;
-            };
+            }
 
             let level = self.user_levels.entry((user, category)).read();
             let perk_reduction = self._get_perk_for_level(level);
@@ -527,10 +520,10 @@ mod EarnscapeStaking {
         }
 
         fn _safe_unstake_stearn(
-            ref self: ContractState, user: ContractAddress, mixed: bool, mixed_rate: u256
+            ref self: ContractState, user: ContractAddress, mixed: bool, mixed_rate: u256,
         ) -> (bool, u256) {
             let vesting = IEarnscapeVestingDispatcher {
-                contract_address: self.vesting_contract.read()
+                contract_address: self.vesting_contract.read(),
             };
             let (releasable, remaining) = vesting.calculate_releasable_amount(user);
 
@@ -562,16 +555,11 @@ mod EarnscapeStaking {
                         self._calculate_tax(staked_amount, DEFAULT_TAX)
                     };
 
-                    self
-                        .emit(
-                            StearnTaxCalculation {
-                                user, category, staked_amount, tax_amount
-                            }
-                        );
+                    self.emit(StearnTaxCalculation { user, category, staked_amount, tax_amount });
                     total_stearn_tax += tax_amount;
                 }
                 i += 1;
-            };
+            }
 
             // Burn staked stEARN
             let stearn_token = self.stearn_token.read();
@@ -592,10 +580,10 @@ mod EarnscapeStaking {
         }
 
         fn _safe_reshuffle_stearn(
-            ref self: ContractState, user: ContractAddress, mixed: bool, mixed_rate: u256
+            ref self: ContractState, user: ContractAddress, mixed: bool, mixed_rate: u256,
         ) -> (bool, u256) {
             let vesting = IEarnscapeVestingDispatcher {
-                contract_address: self.vesting_contract.read()
+                contract_address: self.vesting_contract.read(),
             };
             let (releasable, remaining) = vesting.calculate_releasable_amount(user);
 
@@ -630,7 +618,7 @@ mod EarnscapeStaking {
                     total_stearn_tax += tax_amount;
                 }
                 i += 1;
-            };
+            }
 
             // Burn staked stEARN
             let stearn_token = self.stearn_token.read();
@@ -663,16 +651,14 @@ mod EarnscapeStaking {
             let user_earn_balance = earn_token.balance_of(caller);
 
             let vesting = IEarnscapeVestingDispatcher {
-                contract_address: self.vesting_contract.read()
+                contract_address: self.vesting_contract.read(),
             };
 
             // Adjust stearn balance before checking
             self._adjust_stearn_balance(caller);
             let user_stearn_balance = vesting.get_stearn_balance(caller);
 
-            assert(
-                user_earn_balance > 0 || user_stearn_balance > 0, 'No Earn or stEarn to stake'
-            );
+            assert(user_earn_balance > 0 || user_stearn_balance > 0, 'No Earn or stEarn to stake');
 
             // Check if all amount is releasable
             let (_, locked) = vesting.calculate_releasable_amount(caller);
@@ -724,7 +710,9 @@ mod EarnscapeStaking {
 
                     self
                         .emit(
-                            EarnTaxCalculation { user: caller, category, staked_amount: staked, tax_amount: tax }
+                            EarnTaxCalculation {
+                                user: caller, category, staked_amount: staked, tax_amount: tax,
+                            },
                         );
                     total_amount += staked;
                     total_tax += tax;
@@ -732,7 +720,7 @@ mod EarnscapeStaking {
                 }
 
                 i += 1;
-            };
+            }
 
             if has_earn_data {
                 let earn_token = self.earn_token.read();
@@ -752,7 +740,8 @@ mod EarnscapeStaking {
             if stearn_staked > 0 {
                 has_stearn_data = true;
                 let (mixed_stearn, mixed_rate_stearn) = self._detect_mixed_rate_stearn(caller);
-                let (success, _) = self._safe_unstake_stearn(caller, mixed_stearn, mixed_rate_stearn);
+                let (success, _) = self
+                    ._safe_unstake_stearn(caller, mixed_stearn, mixed_rate_stearn);
 
                 if success {
                     self._reset_stearn_user_data(caller);
@@ -803,7 +792,9 @@ mod EarnscapeStaking {
 
                     self
                         .emit(
-                            EarnTaxCalculation { user: caller, category, staked_amount: staked, tax_amount: tax }
+                            EarnTaxCalculation {
+                                user: caller, category, staked_amount: staked, tax_amount: tax,
+                            },
                         );
                     total_amount += staked;
                     total_tax += tax;
@@ -811,7 +802,7 @@ mod EarnscapeStaking {
                 }
 
                 i += 1;
-            };
+            }
 
             if has_earn_data {
                 let earn_token = self.earn_token.read();
@@ -830,16 +821,15 @@ mod EarnscapeStaking {
 
             if stearn_staked > 0 {
                 let (mixed_stearn, mixed_rate_stearn) = self._detect_mixed_rate_stearn(caller);
-                let (success, _) = self._safe_reshuffle_stearn(caller, mixed_stearn, mixed_rate_stearn);
+                let (success, _) = self
+                    ._safe_reshuffle_stearn(caller, mixed_stearn, mixed_rate_stearn);
 
                 if success {
                     self._reset_stearn_user_data(caller);
                 }
             }
 
-            assert(
-                has_earn_data || stearn_staked > 0, 'No Earn or Stearn staking data'
-            );
+            assert(has_earn_data || stearn_staked > 0, 'No Earn or Stearn staking data');
 
             self._reset_user_data(caller);
             self.emit(Reshuffled { user: caller, amount: total_amount, tax_amount: total_tax });
@@ -859,7 +849,7 @@ mod EarnscapeStaking {
                 self.level_costs.entry((category, level)).write(cost);
                 level += 1;
                 i += 1;
-            };
+            }
 
             self.emit(LevelCostsUpdated { category: category });
         }
@@ -892,7 +882,7 @@ mod EarnscapeStaking {
         }
 
         fn get_user_data(
-            self: @ContractState, user: ContractAddress
+            self: @ContractState, user: ContractAddress,
         ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<ContractAddress>) {
             let count = self.user_categories_count.entry(user).read();
 
@@ -909,13 +899,13 @@ mod EarnscapeStaking {
                 staked_amounts.append(self.user_staked_amounts.entry((user, category)).read());
                 staked_tokens.append(self.user_staked_tokens.entry((user, category)).read());
                 i += 1;
-            };
+            }
 
             (categories, levels, staked_amounts, staked_tokens)
         }
 
         fn get_user_stearn_data(
-            self: @ContractState, user: ContractAddress
+            self: @ContractState, user: ContractAddress,
         ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<ContractAddress>) {
             let count = self.stearn_user_categories_count.entry(user).read();
 
@@ -929,10 +919,11 @@ mod EarnscapeStaking {
                 let category = self.stearn_user_categories.entry((user, i)).read();
                 categories.append(category);
                 levels.append(self.stearn_user_levels.entry((user, category)).read());
-                staked_amounts.append(self.stearn_user_staked_amounts.entry((user, category)).read());
+                staked_amounts
+                    .append(self.stearn_user_staked_amounts.entry((user, category)).read());
                 staked_tokens.append(self.stearn_user_staked_tokens.entry((user, category)).read());
                 i += 1;
-            };
+            }
 
             (categories, levels, staked_amounts, staked_tokens)
         }
@@ -946,25 +937,25 @@ mod EarnscapeStaking {
         }
 
         fn check_is_staked_with_earn(
-            self: @ContractState, user: ContractAddress, token: ContractAddress
+            self: @ContractState, user: ContractAddress, token: ContractAddress,
         ) -> bool {
             self.is_staked_with_earn.entry((user, token)).read()
         }
 
         fn check_is_staked_with_stearn(
-            self: @ContractState, user: ContractAddress, token: ContractAddress
+            self: @ContractState, user: ContractAddress, token: ContractAddress,
         ) -> bool {
             self.is_staked_with_stearn.entry((user, token)).read()
         }
 
         fn get_earn_staked_amount(
-            self: @ContractState, user: ContractAddress, token: ContractAddress
+            self: @ContractState, user: ContractAddress, token: ContractAddress,
         ) -> u256 {
             self.earn_staked_amount.entry((user, token)).read()
         }
 
         fn get_stearn_staked_amount(
-            self: @ContractState, user: ContractAddress, token: ContractAddress
+            self: @ContractState, user: ContractAddress, token: ContractAddress,
         ) -> u256 {
             self.stearn_staked_amount.entry((user, token)).read()
         }
@@ -979,38 +970,38 @@ mod EarnscapeStaking {
             while level <= MAX_LEVEL {
                 costs.append(self.level_costs.entry((category, level)).read());
                 level += 1;
-            };
+            }
             costs
         }
 
         fn calculate_user_stearn_tax(self: @ContractState, user: ContractAddress) -> (u256, u256) {
             let stearn_contract = self.stearn_contract.read();
-            
+
             // Detect mixed rate for stEARN
             let (mixed, mixed_rate) = self._detect_mixed_rate_stearn(user);
-            
+
             let mut total_tax_amount: u256 = 0;
             let mut total_staked_amount: u256 = 0;
-            
+
             let count = self.stearn_user_categories_count.entry(user).read();
             let mut i: u32 = 0;
-            
+
             while i < count {
                 let category = self.stearn_user_categories.entry((user, i)).read();
                 let staked_amount = self.stearn_user_staked_amounts.entry((user, category)).read();
                 let staked_token = self.stearn_user_staked_tokens.entry((user, category)).read();
-                
+
                 // Only tax what was staked via stEarn
                 if staked_token != stearn_contract {
                     i += 1;
                     continue;
                 }
-                
+
                 if staked_amount == 0 {
                     i += 1;
                     continue;
                 }
-                
+
                 let tax_amount = if mixed {
                     self._calculate_tax(staked_amount, mixed_rate)
                 } else if category == 'A' {
@@ -1021,17 +1012,19 @@ mod EarnscapeStaking {
                 } else {
                     self._calculate_tax(staked_amount, DEFAULT_TAX)
                 };
-                
+
                 total_tax_amount += tax_amount;
                 total_staked_amount += staked_amount;
-                
+
                 i += 1;
-            };
-            
+            }
+
             (total_tax_amount, total_staked_amount)
         }
 
-        fn update_user_pending_stearn_tax(ref self: ContractState, user: ContractAddress, new_tax_amount: u256) {
+        fn update_user_pending_stearn_tax(
+            ref self: ContractState, user: ContractAddress, new_tax_amount: u256,
+        ) {
             let caller = get_caller_address();
             assert(caller == self.vesting_contract.read(), 'Only vesting contract');
             self.user_pending_stearn_tax.entry(user).write(new_tax_amount);
@@ -1071,40 +1064,42 @@ trait IEarnscapeStaking<TContractState> {
     fn set_stearn_contract(ref self: TContractState, contract: starknet::ContractAddress);
     fn transfer_all_tokens(ref self: TContractState, new_contract: starknet::ContractAddress);
     fn update_user_pending_stearn_tax(
-        ref self: TContractState,
-        user: starknet::ContractAddress,
-        new_tax_amount: u256
+        ref self: TContractState, user: starknet::ContractAddress, new_tax_amount: u256,
     );
-    
+
     // Read functions - User data
     fn get_user_data(
-        self: @TContractState, user: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress,
     ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<starknet::ContractAddress>);
     fn get_user_stearn_data(
-        self: @TContractState, user: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress,
     ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<starknet::ContractAddress>);
-    fn read_level(self: @TContractState, user: starknet::ContractAddress, category: felt252) -> u256;
-    
+    fn read_level(
+        self: @TContractState, user: starknet::ContractAddress, category: felt252,
+    ) -> u256;
+
     // Read functions - Level costs
     fn get_level_cost(self: @TContractState, category: felt252, level: u8) -> u256;
     fn get_level_costs(self: @TContractState, category: felt252) -> Array<u256>;
-    
+
     // Read functions - Staking status
     fn check_is_staked_with_earn(
-        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress,
     ) -> bool;
     fn check_is_staked_with_stearn(
-        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress,
     ) -> bool;
     fn get_earn_staked_amount(
-        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress,
     ) -> u256;
     fn get_stearn_staked_amount(
-        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress
+        self: @TContractState, user: starknet::ContractAddress, token: starknet::ContractAddress,
     ) -> u256;
     fn get_user_pending_stearn_tax(self: @TContractState, user: starknet::ContractAddress) -> u256;
-    fn calculate_user_stearn_tax(self: @TContractState, user: starknet::ContractAddress) -> (u256, u256);
-    
+    fn calculate_user_stearn_tax(
+        self: @TContractState, user: starknet::ContractAddress,
+    ) -> (u256, u256);
+
     // Read functions - Contract addresses
     fn earn_token(self: @TContractState) -> starknet::ContractAddress;
     fn stearn_token(self: @TContractState) -> starknet::ContractAddress;

@@ -10,6 +10,9 @@ mod EarnToken {
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
+    const INITIAL_SUPPLY: u256 =
+        1_000_000_000_000_000_000_000_000_000; // 1 billion with 18 decimals
+
     // ERC20 implementations
     #[abi(embed_v0)]
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
@@ -43,12 +46,12 @@ mod EarnToken {
     fn constructor(ref self: ContractState, owner: ContractAddress) {
         // Initialize ERC20 with name "EarnToken" and symbol "EARN"
         self.erc20.initializer("EarnToken", "EARN");
-        
+
         // Set owner
         self.ownable.initializer(owner);
 
-        // Mint initial supply: 1 billion tokens (1,000,000,000 * 10^18)
-        self.erc20.mint(owner, 1000000000000000000000000000);
+        // Mint initial supply
+        self.erc20.mint(owner, INITIAL_SUPPLY);
     }
 
     // ERC20 Hooks - empty implementation (standard ERC20, no transfer restrictions)
@@ -57,18 +60,16 @@ mod EarnToken {
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
-        ) {
-            // No custom logic - all transfers allowed
+            amount: u256,
+        ) { // No custom logic - all transfers allowed
         }
 
         fn after_update(
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
-        ) {
-            // No custom logic
+            amount: u256,
+        ) { // No custom logic
         }
     }
 }
