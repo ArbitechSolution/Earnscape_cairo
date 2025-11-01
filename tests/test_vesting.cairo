@@ -1,3 +1,4 @@
+use earnscape_contracts::vesting::{IVestingDispatcher, IVestingDispatcherTrait};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{
     start_cheat_block_timestamp_global, start_cheat_caller_address,
@@ -23,54 +24,6 @@ trait IStEarnToken<TContractState> {
 #[starknet::interface]
 trait IEarnscapeStaking<TContractState> {
     fn set_vesting_contract(ref self: TContractState, contract: ContractAddress);
-}
-
-#[starknet::interface]
-trait IVesting<TContractState> {
-    // Admin functions
-    fn update_earn_stark_manager(ref self: TContractState, earn_stark_manager: ContractAddress);
-    fn update_staking_contract(ref self: TContractState, staking_contract: ContractAddress);
-    fn set_fee_recipient(ref self: TContractState, recipient: ContractAddress);
-    fn set_platform_fee_pct(ref self: TContractState, pct: u64);
-    fn update_merchandise_admin_wallet(ref self: TContractState, merch_wallet: ContractAddress);
-    fn update_earn_stark_manager_address(ref self: TContractState, contract_addr: ContractAddress);
-
-    // Balance management
-    fn get_earn_balance(self: @TContractState, beneficiary: ContractAddress) -> u256;
-    fn update_earn_balance(ref self: TContractState, user: ContractAddress, amount: u256);
-    fn get_stearn_balance(self: @TContractState, beneficiary: ContractAddress) -> u256;
-    fn update_stearn_balance(ref self: TContractState, user: ContractAddress, amount: u256);
-    fn st_earn_transfer(ref self: TContractState, sender: ContractAddress, amount: u256);
-
-    // Vesting operations
-    fn deposit_earn(ref self: TContractState, beneficiary: ContractAddress, amount: u256);
-    fn calculate_releasable_amount(
-        self: @TContractState, beneficiary: ContractAddress,
-    ) -> (u256, u256);
-    fn release_vested_amount(ref self: TContractState, beneficiary: ContractAddress);
-    fn force_release_vested_amount(ref self: TContractState, beneficiary: ContractAddress);
-    fn release_vested_admins(ref self: TContractState);
-
-    // Vesting queries
-    fn get_user_vesting_count(self: @TContractState, beneficiary: ContractAddress) -> u32;
-    fn get_vesting_schedule(
-        self: @TContractState, beneficiary: ContractAddress, index: u32,
-    ) -> (ContractAddress, u64, u64, u64, u64, u256, u256);
-    fn get_user_vesting_details(
-        self: @TContractState, beneficiary: ContractAddress,
-    ) -> Array<(u32, ContractAddress, u64, u64, u64, u64, u256, u256)>;
-    fn preview_vesting_params(self: @TContractState, beneficiary: ContractAddress) -> (u64, u64);
-
-    // Configuration getters
-    fn get_fee_recipient(self: @TContractState) -> ContractAddress;
-    fn get_platform_fee_pct(self: @TContractState) -> u64;
-    fn get_merchandise_admin_wallet(self: @TContractState) -> ContractAddress;
-    fn get_earn_stark_manager(self: @TContractState) -> ContractAddress;
-    fn get_default_vesting_time(self: @TContractState) -> u64;
-    fn get_total_amount_vested(self: @TContractState) -> u256;
-
-    // Tipping
-    fn give_a_tip(ref self: TContractState, receiver: ContractAddress, tip_amount: u256);
 }
 
 // ============================================================================

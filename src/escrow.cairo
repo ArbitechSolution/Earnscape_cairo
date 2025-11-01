@@ -137,7 +137,7 @@ mod Escrow {
 }
 
 #[starknet::interface]
-trait IEscrow<TContractState> {
+pub trait IEscrow<TContractState> {
     fn contract4(self: @TContractState) -> starknet::ContractAddress;
     fn earns_token(self: @TContractState) -> starknet::ContractAddress;
     fn earnscape_treasury(self: @TContractState) -> starknet::ContractAddress;

@@ -119,7 +119,7 @@ mod EarnSTARKManager {
 }
 
 #[starknet::interface]
-trait IEarnSTARKManager<TContractState> {
+pub trait IEarnSTARKManager<TContractState> {
     fn vesting(self: @TContractState) -> starknet::ContractAddress;
     fn transfer_earns(ref self: TContractState, recipient: starknet::ContractAddress, amount: u256);
     fn transfer_eth(ref self: TContractState, recipient: starknet::ContractAddress, amount: u256);

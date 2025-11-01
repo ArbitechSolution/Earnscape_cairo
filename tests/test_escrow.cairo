@@ -1,26 +1,10 @@
+use earnscape_contracts::escrow::{IEscrowDispatcher, IEscrowDispatcherTrait};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use starknet::ContractAddress;
 use crate::utils::{
     HUNDRED_TOKENS, ONE_DAY, OWNER, THOUSAND_TOKENS, TREASURY, USER1, USER2, get_balance,
     setup_earn_token, setup_escrow, transfer_token,
 };
-
-#[starknet::interface]
-trait IEscrow<TContractState> {
-    fn transfer_to(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn transfer_all_to_treasury(ref self: TContractState);
-    fn transfer_all(ref self: TContractState);
-    fn withdraw_to_contract4(ref self: TContractState, amount: u256);
-    fn set_contract4(ref self: TContractState, contract_address: ContractAddress);
-    fn get_earns_balance(self: @TContractState) -> u256;
-    fn earns_token(self: @TContractState) -> ContractAddress;
-    fn treasury(self: @TContractState) -> ContractAddress;
-    fn earnscape_treasury(self: @TContractState) -> ContractAddress;
-    fn contract4(self: @TContractState) -> ContractAddress;
-    fn get_deployment_time(self: @TContractState) -> u64;
-    fn get_closing_time(self: @TContractState) -> u64;
-}
 
 // ============================================================================
 // Constructor Tests

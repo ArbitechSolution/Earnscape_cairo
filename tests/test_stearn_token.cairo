@@ -1,20 +1,10 @@
+use earnscape_contracts::stearn_token::{IStEarnTokenDispatcher, IStEarnTokenDispatcherTrait};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use starknet::ContractAddress;
 use crate::utils::{
     HUNDRED_TOKENS, OWNER, THOUSAND_TOKENS, USER1, USER2, ZERO_ADDRESS, setup_stearn_token,
 };
-
-#[starknet::interface]
-trait IStEarnToken<TContractState> {
-    fn vesting_contract(self: @TContractState) -> ContractAddress;
-    fn staking_contract(self: @TContractState) -> ContractAddress;
-    fn set_vesting_address(ref self: TContractState, vesting: ContractAddress);
-    fn set_staking_contract_address(ref self: TContractState, staking_contract: ContractAddress);
-    fn mint(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn burn(ref self: TContractState, user: ContractAddress, amount: u256);
-}
 
 // ============================================================================
 // Constructor Tests

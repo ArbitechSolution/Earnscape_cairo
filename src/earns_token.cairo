@@ -105,7 +105,7 @@ mod EarnsToken {
 }
 
 #[starknet::interface]
-trait IEarnsToken<TContractState> {
+pub trait IEarnsToken<TContractState> {
     fn set_contract4_and_contract5(
         ref self: TContractState,
         _contract4: starknet::ContractAddress,
