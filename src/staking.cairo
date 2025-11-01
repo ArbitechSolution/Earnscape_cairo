@@ -1053,7 +1053,7 @@ mod EarnscapeStaking {
 }
 
 #[starknet::interface]
-trait IEarnscapeStaking<TContractState> {
+pub trait IEarnscapeStaking<TContractState> {
     // Write functions
     fn stake(ref self: TContractState, category: felt252, levels: Span<u256>);
     fn unstake(ref self: TContractState);

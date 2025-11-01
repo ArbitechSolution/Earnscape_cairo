@@ -1,3 +1,4 @@
+use earnscape_contracts::staking::{IEarnscapeStakingDispatcher, IEarnscapeStakingDispatcherTrait};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
@@ -6,43 +7,6 @@ use crate::utils::{
     THOUSAND_TOKENS, USER1, USER2, approve_token, get_balance, setup_complete_system,
     setup_earn_token, setup_earnstark_manager, setup_staking, setup_stearn_token, transfer_token,
 };
-
-#[starknet::interface]
-trait IEarnscapeStaking<TContractState> {
-    fn stake(ref self: TContractState, category: felt252, levels: Span<u256>);
-    fn stake_with_earn(ref self: TContractState, amount: u256, level: u8, category_to_stake: u8);
-    fn unstake(ref self: TContractState);
-    fn reshuffle(ref self: TContractState);
-    fn get_user_data(
-        self: @TContractState, user: ContractAddress,
-    ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<ContractAddress>);
-    fn get_user_stearn_data(
-        self: @TContractState, user: ContractAddress,
-    ) -> (Array<felt252>, Array<u256>, Array<u256>, Array<ContractAddress>);
-    fn read_level(self: @TContractState, user: ContractAddress, category: felt252) -> u256;
-    fn get_staked_amount(self: @TContractState, user: ContractAddress) -> u256;
-    fn get_earn_staked_amount(
-        self: @TContractState, user: ContractAddress, token: ContractAddress,
-    ) -> u256;
-    fn check_is_staked_with_earn(
-        self: @TContractState, user: ContractAddress, token: ContractAddress,
-    ) -> bool;
-    fn get_level_costs(self: @TContractState, category: felt252) -> Array<u256>;
-    fn set_level_cost(ref self: TContractState, level: u8, cost: u256);
-    fn set_level_costs(ref self: TContractState, category: felt252, costs: Span<u256>);
-    fn get_level_cost(self: @TContractState, category: felt252, level: u8) -> u256;
-    fn transfer_all_earn(ref self: TContractState);
-    fn set_earn_stark_manager(ref self: TContractState, new_contract: ContractAddress);
-    fn set_vesting_contract(ref self: TContractState, contract: ContractAddress);
-    fn set_stearn_contract(ref self: TContractState, contract: ContractAddress);
-    fn earn_token(self: @TContractState) -> ContractAddress;
-    fn stearn_token(self: @TContractState) -> ContractAddress;
-    fn manager(self: @TContractState) -> ContractAddress;
-    fn earn_stark_manager(self: @TContractState) -> ContractAddress;
-    fn vesting_contract(self: @TContractState) -> ContractAddress;
-    fn stearn_contract(self: @TContractState) -> ContractAddress;
-    fn transfer_all_tokens(ref self: TContractState, to: ContractAddress);
-}
 
 #[starknet::interface]
 trait IStEarnToken<TContractState> {

@@ -1,38 +1,13 @@
+use earnscape_contracts::bulk_vesting::{
+    IEarnscapeBulkVestingDispatcher, IEarnscapeBulkVestingDispatcherTrait,
+};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use starknet::ContractAddress;
 use crate::utils::{
     ONE_MILLION_TOKENS, ONE_TOKEN, OWNER, THOUSAND_TOKENS, TREASURY, USER1, USER2, USER3,
     advance_time, get_balance, setup_bulk_vesting, setup_earn_token, setup_earnstark_manager,
     setup_escrow, transfer_token,
 };
-
-#[starknet::interface]
-trait IEarnscapeBulkVesting<TContractState> {
-    fn add_user_data(
-        ref self: TContractState,
-        category_id: u8,
-        names: Span<felt252>,
-        user_addresses: Span<ContractAddress>,
-        amounts: Span<u256>,
-    );
-    fn calculate_releasable_amount(
-        ref self: TContractState, beneficiary: ContractAddress,
-    ) -> (u256, u256);
-    fn release_vested_amount(ref self: TContractState, beneficiary: ContractAddress);
-    fn release_immediately(ref self: TContractState, category_id: u8, recipient: ContractAddress);
-    fn update_category_supply(ref self: TContractState, category_id: u8, additional_supply: u256);
-    fn get_category_details(self: @TContractState, category_id: u8) -> (felt252, u256, u256, u64);
-    fn get_user_vesting_count(self: @TContractState, beneficiary: ContractAddress) -> u32;
-    fn get_vesting_schedule(
-        self: @TContractState, beneficiary: ContractAddress, index: u32,
-    ) -> (ContractAddress, u64, u64, u64, u64, u256, u256);
-    fn get_total_amount_vested(self: @TContractState) -> u256;
-    fn get_earn_stark_manager(self: @TContractState) -> ContractAddress;
-    fn get_escrow_contract(self: @TContractState) -> ContractAddress;
-    fn get_token_address(self: @TContractState) -> ContractAddress;
-    fn recover_stuck_token(ref self: TContractState, token_address: ContractAddress, amount: u256);
-}
 
 // ============================================================================
 // Constructor Tests

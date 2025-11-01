@@ -169,7 +169,7 @@ mod StEarnToken {
 }
 
 #[starknet::interface]
-trait IStEarnToken<TContractState> {
+pub trait IStEarnToken<TContractState> {
     fn vesting_contract(self: @TContractState) -> starknet::ContractAddress;
     fn staking_contract(self: @TContractState) -> starknet::ContractAddress;
     fn set_vesting_address(ref self: TContractState, vesting: starknet::ContractAddress);

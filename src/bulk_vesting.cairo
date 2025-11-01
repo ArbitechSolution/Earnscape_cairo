@@ -402,7 +402,7 @@ mod EarnscapeBulkVesting {
 }
 
 #[starknet::interface]
-trait IEarnscapeBulkVesting<TContractState> {
+pub trait IEarnscapeBulkVesting<TContractState> {
     fn add_user_data(
         ref self: TContractState,
         category_id: u8,

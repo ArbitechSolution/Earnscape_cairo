@@ -498,12 +498,11 @@ mod Vesting {
         // Transfer stEARN tokens
         fn st_earn_transfer(ref self: ContractState, sender: ContractAddress, amount: u256) {
             let current = self.stearn_balance.entry(sender).read();
-            if current >= amount {
-                self.stearn_balance.entry(sender).write(current - amount);
-                let stearn_token = self.stearn_token.read();
-                IERC20Dispatcher { contract_address: stearn_token }
-                    .transfer(get_caller_address(), amount);
-            }
+            assert(current >= amount, 'Insufficient stEARN balance');
+            self.stearn_balance.entry(sender).write(current - amount);
+            let stearn_token = self.stearn_token.read();
+            IERC20Dispatcher { contract_address: stearn_token }
+                .transfer(get_caller_address(), amount);
         }
 
         // Deposit EARN tokens and create vesting schedule
@@ -1078,7 +1077,7 @@ mod Vesting {
 
 // Public interface matching Solidity contract
 #[starknet::interface]
-trait IVesting<TContractState> {
+pub trait IVesting<TContractState> {
     // Admin functions
     fn update_earn_stark_manager(
         ref self: TContractState, earn_stark_manager: starknet::ContractAddress,

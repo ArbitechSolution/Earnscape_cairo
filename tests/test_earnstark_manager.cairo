@@ -1,25 +1,12 @@
+use earnscape_contracts::earnStark_manager::{
+    IEarnSTARKManagerDispatcher, IEarnSTARKManagerDispatcherTrait,
+};
 use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use starknet::ContractAddress;
 use crate::utils::{
     HUNDRED_TOKENS, OWNER, THOUSAND_TOKENS, USER1, USER2, ZERO_ADDRESS, get_balance,
     setup_earn_token, setup_earnstark_manager, transfer_token,
 };
-
-#[starknet::interface]
-trait IEarnSTARKManager<TContractState> {
-    fn transfer_earns(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn transfer_eth(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn vesting_deposit(ref self: TContractState, amount: u256);
-    fn earn_deposit_to_vesting(ref self: TContractState, receiver: ContractAddress, amount: u256);
-    fn get_earns_balance(self: @TContractState) -> u256;
-    fn get_eth_balance(self: @TContractState) -> u256;
-    fn set_vesting_contract(ref self: TContractState, vesting: ContractAddress);
-    fn set_vesting_address(ref self: TContractState, vesting: ContractAddress);
-    fn earns_token(self: @TContractState) -> ContractAddress;
-    fn vesting_contract(self: @TContractState) -> ContractAddress;
-    fn vesting(self: @TContractState) -> ContractAddress;
-}
 
 // ============================================================================
 // Constructor Tests
